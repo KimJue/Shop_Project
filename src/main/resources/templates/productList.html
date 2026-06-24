@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Jueun Mall - 상품 목록</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
+
+        body { font-family: 'Noto Sans KR', sans-serif; background-color: #ffffff; }
+
+        .navbar-custom { background-color: #000000; padding: 15px 0; }
+        .navbar-brand { font-weight: 900; letter-spacing: 2px; font-size: 1.5rem; }
+
+        .btn-custom-dark { background-color: #000; color: #fff; border-radius: 0; font-weight: 500; }
+        .btn-custom-dark:hover { background-color: #333; color: #fff; }
+
+        /* 카테고리 필터 탭 */
+        .filter-tab { border-bottom: 2px solid #000; margin-bottom: 32px; }
+        .filter-tab button {
+            background: none; border: none; border-bottom: 3px solid transparent;
+            padding: 10px 20px; font-size: 0.9rem; font-weight: 500;
+            color: #999; cursor: pointer; margin-bottom: -2px;
+        }
+        .filter-tab button.active { color: #000; border-bottom-color: #000; }
+        .filter-tab button:hover { color: #000; }
+
+        /* 상품 카드 */
+        .product-card { border: none; cursor: pointer; transition: transform 0.2s ease; }
+        .product-card:hover { transform: translateY(-4px); }
+        .product-card:hover .card-overlay { opacity: 1; }
+        .img-wrap { position: relative; overflow: hidden; }
+        .product-card img { aspect-ratio: 3/4; object-fit: cover; width: 100%; display: block; }
+        .card-overlay {
+            position: absolute; bottom: 0; left: 0; right: 0;
+            background: rgba(0,0,0,0.75); color: #fff;
+            padding: 14px; text-align: center;
+            font-size: 0.85rem; font-weight: 500;
+            opacity: 0; transition: opacity 0.2s ease;
+        }
+
+        .brand-text { font-size: 0.78rem; font-weight: 700; color: #555; margin-bottom: 2px; }
+        .product-title { font-size: 0.9rem; color: #111; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .product-price { font-size: 1rem; font-weight: 700; color: #000; }
+
+        .form-control { border-radius: 0; border: 1px solid #e0e0e0; }
+        .form-control:focus { border-color: #000; box-shadow: none; }
+
+        .page-header { border-bottom: 3px solid #000; padding-bottom: 12px; margin-bottom: 28px; }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-dark navbar-custom mb-5">
+    <div class="container d-flex justify-content-between align-items-center">
+        <a class="navbar-brand text-white" href="/products">JUEUN MALL</a>
+        <div class="d-flex align-items-center">
+            <div th:if="${session.loggedInUserEmail == null}">
+                <a href="/login" class="btn text-white me-2">로그인</a>
+                <a href="/signup" class="btn btn-outline-light rounded-0">회원가입</a>
+            </div>
+            <div th:if="${session.loggedInUserEmail != null}">
+                <span class="text-white me-4" style="font-size: 0.9rem;" th:text="${session.loggedInUserName} + '님'"></span>
+                <a href="/mypage" class="btn text-white me-2">마이페이지</a>
+                <a href="/cart" class="btn text-white me-2">장바구니 🛒</a>
+                <a href="/logout" class="btn btn-outline-light rounded-0" style="padding: 4px 12px; font-size: 0.8rem;">로그아웃</a>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<div class="container mb-5">
+    <div class="d-flex justify-content-between align-items-end page-header">
+        <h3 class="fw-bold mb-0" style="letter-spacing: 1px;">ALL PRODUCTS</h3>
+        <span class="text-muted" style="font-size: 0.85rem;"
+              th:text="'총 ' + ${#lists.size(products)} + '개의 상품'"></span>
+    </div>
+
+    <!-- 카테고리 필터 탭 -->
+    <div class="filter-tab d-flex">
+        <button class="active" onclick="filterProducts('all', this)">전체</button>
+        <button onclick="filterProducts('상의', this)">상의</button>
+        <button onclick="filterProducts('하의', this)">하의</button>
+        <button onclick="filterProducts('아우터', this)">아우터</button>
+        <button onclick="filterProducts('신발', this)">신발</button>
+        <button onclick="filterProducts('악세서리', this)">악세서리</button>
+    </div>
+
+    <!-- 상품 그리드 -->
+    <div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-4 mb-5" id="product-grid">
+        <div class="col product-item" th:each="product : ${products}"
+             th:attr="data-category=${product.category != null ? product.category : 'all'}">
+            <div class="card product-card h-100 border-0">
+                <a th:href="@{/products/{id}(id=${product.id})}" class="text-decoration-none text-dark">
+                    <div class="img-wrap">
+                        <img th:src="${product.imageUrl}" th:alt="${product.name}">
+                        <div class="card-overlay">상세보기</div>
+                    </div>
+                    <div class="card-body px-1 py-3">
+                        <div class="brand-text">JUEUN STANDARD</div>
+                        <div class="product-title" th:text="${product.name}">상품명</div>
+                        <div class="product-price"
+                             th:text="${#numbers.formatInteger(product.price, 0, 'COMMA')} + '원'">가격</div>
+                    </div>
+                </a>
+                <div class="px-1 pb-3">
+                    <form th:action="@{/cart/add}" method="post">
+                        <input type="hidden" name="productId" th:value="${product.id}">
+                        <div class="input-group input-group-sm mb-2">
+                            <span class="input-group-text bg-white border-end-0 rounded-0">수량</span>
+                            <input type="number" name="quantity"
+                                   class="form-control border-start-0 text-center rounded-0"
+                                   value="1" min="1">
+                        </div>
+                        <button type="submit" class="btn btn-custom-dark w-100 btn-sm py-2">장바구니 담기</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function filterProducts(category, btn) {
+        document.querySelectorAll('.filter-tab button').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        document.querySelectorAll('.product-item').forEach(item => {
+            item.style.display = (category === 'all' || item.dataset.category === category) ? '' : 'none';
+        });
+    }
+</script>
+
+</body>
+</html>

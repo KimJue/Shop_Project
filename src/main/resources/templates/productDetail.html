@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${product.name} + ' - Jueun Mall'">상품 상세</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
+
+        body { font-family: 'Noto Sans KR', sans-serif; background-color: #ffffff; }
+
+        .navbar-custom { background-color: #000000; padding: 15px 0; }
+        .navbar-brand { font-weight: 900; letter-spacing: 2px; font-size: 1.5rem; }
+
+        .brand-label { font-size: 0.85rem; font-weight: 700; color: #555; letter-spacing: 1px; }
+        .product-name { font-size: 1.6rem; font-weight: 900; color: #000; }
+        .product-price { font-size: 1.5rem; font-weight: 700; color: #000; }
+        .divider { border-top: 1px solid #e0e0e0; margin: 24px 0; }
+
+        /* 사이즈 버튼 */
+        .size-btn {
+            border: 1px solid #ddd; background: #fff; color: #000;
+            padding: 8px 16px; font-size: 0.85rem; cursor: pointer;
+            transition: all 0.15s;
+        }
+        .size-btn:hover { border-color: #000; }
+        .size-btn.selected { border-color: #000; background: #000; color: #fff; }
+        .size-btn.soldout { color: #ccc; border-color: #eee; cursor: not-allowed; text-decoration: line-through; }
+
+        /* 수량 조절 */
+        .qty-btn {
+            width: 36px; height: 36px; border: 1px solid #ddd;
+            background: #fff; font-size: 1.1rem; cursor: pointer;
+        }
+        .qty-btn:hover { border-color: #000; }
+        .qty-input {
+            width: 50px; height: 36px; border: 1px solid #ddd; border-left: none; border-right: none;
+            text-align: center; font-size: 0.95rem;
+        }
+
+        .btn-custom-dark {
+            background-color: #000; color: #fff; border-radius: 0;
+            font-weight: 700; padding: 15px; letter-spacing: 1px;
+        }
+        .btn-custom-dark:hover { background-color: #333; color: #fff; }
+        .btn-custom-outline {
+            border: 1px solid #ddd; color: #000; border-radius: 0; padding: 15px;
+        }
+        .btn-custom-outline:hover { border-color: #000; background-color: #f8f8f8; }
+
+        /* 재고 표시 */
+        .stock-badge {
+            font-size: 0.8rem; padding: 3px 8px;
+            background: #f4f4f4; color: #555;
+        }
+
+        /* 상품 상세 탭 */
+        .detail-tab { border-top: 3px solid #000; border-bottom: 1px solid #ddd; margin-top: 60px; }
+        .detail-tab button {
+            background: none; border: none; padding: 14px 24px;
+            font-size: 0.9rem; font-weight: 500; color: #999; cursor: pointer;
+        }
+        .detail-tab button.active { color: #000; font-weight: 700; }
+
+        /* 빵부스러기 */
+        .breadcrumb-item, .breadcrumb-item a { font-size: 0.82rem; color: #999; text-decoration: none; }
+        .breadcrumb-item.active { color: #000; }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-dark navbar-custom mb-5">
+    <div class="container d-flex justify-content-between align-items-center">
+        <a class="navbar-brand text-white" href="/products">JUEUN MALL</a>
+        <div class="d-flex align-items-center">
+            <div th:if="${session.loggedInUserEmail == null}">
+                <a href="/login" class="btn text-white me-2">로그인</a>
+                <a href="/signup" class="btn btn-outline-light rounded-0">회원가입</a>
+            </div>
+            <div th:if="${session.loggedInUserEmail != null}">
+                <span class="text-white me-4" style="font-size: 0.9rem;"
+                      th:text="${session.loggedInUserName} + '님'"></span>
+                <a href="/mypage" class="btn text-white me-2">마이페이지</a>
+                <a href="/cart" class="btn text-white me-2">장바구니 🛒</a>
+                <a href="/logout" class="btn btn-outline-light rounded-0"
+                   style="padding: 4px 12px; font-size: 0.8rem;">로그아웃</a>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<div class="container mb-5" style="max-width: 1000px;">
+
+    <!-- 브레드크럼 -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/">홈</a></li>
+            <li class="breadcrumb-item"><a href="/products">전체상품</a></li>
+            <li class="breadcrumb-item active" th:text="${product.name}">상품명</li>
+        </ol>
+    </nav>
+
+    <div class="row g-5">
+        <!-- 상품 이미지 -->
+        <div class="col-md-6">
+            <img th:src="${product.imageUrl}" th:alt="${product.name}"
+                 style="width: 100%; aspect-ratio: 3/4; object-fit: cover;">
+        </div>
+
+        <!-- 상품 정보 -->
+        <div class="col-md-6 d-flex flex-column justify-content-start pt-2">
+            <p class="brand-label mb-1">JUEUN STANDARD</p>
+            <h2 class="product-name mb-2" th:text="${product.name}">상품명</h2>
+
+            <div class="d-flex align-items-center gap-2 mb-3">
+                <span class="product-price"
+                      th:text="${#numbers.formatInteger(product.price, 0, 'COMMA')} + '원'">가격</span>
+                <span class="stock-badge"
+                      th:text="'재고 ' + ${product.stockQuantity} + '개'">재고</span>
+            </div>
+
+            <div class="divider"></div>
+
+            <!-- 사이즈 선택 -->
+            <div class="mb-4">
+                <p class="mb-2" style="font-size: 0.85rem; font-weight: 700;">사이즈 선택</p>
+                <div class="d-flex gap-2 flex-wrap">
+                    <button type="button" class="size-btn" onclick="selectSize(this)">S</button>
+                    <button type="button" class="size-btn" onclick="selectSize(this)">M</button>
+                    <button type="button" class="size-btn" onclick="selectSize(this)">L</button>
+                    <button type="button" class="size-btn" onclick="selectSize(this)">XL</button>
+                    <button type="button" class="size-btn soldout" disabled>XXL</button>
+                </div>
+            </div>
+
+            <form th:action="@{/cart/add}" method="post">
+                <input type="hidden" name="productId" th:value="${product.id}">
+
+                <!-- 수량 조절 -->
+                <div class="mb-4">
+                    <p class="mb-2" style="font-size: 0.85rem; font-weight: 700;">수량</p>
+                    <div class="d-flex align-items-center">
+                        <button type="button" class="qty-btn" onclick="changeQty(-1)">−</button>
+                        <input type="number" id="quantity" name="quantity"
+                               class="qty-input" value="1" min="1" readonly>
+                        <button type="button" class="qty-btn" onclick="changeQty(1)">+</button>
+                    </div>
+                </div>
+
+                <p class="text-muted mb-4" style="font-size: 0.9rem; line-height: 1.8;"
+                   th:text="${product.description}">상품 설명</p>
+
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-custom-dark">장바구니 담기</button>
+                    <a href="/products" class="btn btn-custom-outline text-center">목록으로 돌아가기</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 상세정보 탭 -->
+    <div class="detail-tab d-flex mt-5">
+        <button class="active">상품정보</button>
+        <button>배송/교환/반품</button>
+    </div>
+    <div class="py-4" style="min-height: 200px; color: #555; font-size: 0.9rem; line-height: 1.9;"
+         th:text="${product.description}">
+        상품 상세 설명이 들어갑니다.
+    </div>
+</div>
+
+<script>
+    function selectSize(btn) {
+        document.querySelectorAll('.size-btn:not(.soldout)').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+    }
+    function changeQty(delta) {
+        const input = document.getElementById('quantity');
+        const newVal = Math.max(1, parseInt(input.value) + delta);
+        input.value = newVal;
+    }
+</script>
+
+</body>
+</html>
