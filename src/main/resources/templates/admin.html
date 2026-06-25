@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>관리자 - Jueun Mall</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
+        body { font-family: 'Noto Sans KR', sans-serif; background-color: #ffffff; }
+        .navbar-custom { background-color: #000000; padding: 15px 0; }
+        .navbar-brand { font-weight: 900; letter-spacing: 2px; font-size: 1.5rem; }
+        .page-title { font-weight: 900; letter-spacing: 1px; font-size: 2rem; }
+        .admin-table { border-top: 3px solid #000; border-bottom: 1px solid #000; }
+        .admin-table th { background-color: #fafafa; border-bottom: 1px solid #e0e0e0; font-weight: 500; color: #333; padding: 15px 12px; }
+        .admin-table td { vertical-align: middle; border-bottom: 1px solid #f0f0f0; padding: 14px 12px; }
+        .btn-custom-dark { background-color: #000; color: #fff; border-radius: 0; font-weight: 500; }
+        .btn-custom-dark:hover { background-color: #333; color: #fff; }
+        .btn-danger-custom { background-color: #fff; color: #cc0000; border: 1px solid #cc0000; border-radius: 0; }
+        .btn-danger-custom:hover { background-color: #cc0000; color: #fff; }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-dark navbar-custom mb-5">
+    <div class="container d-flex justify-content-between align-items-center">
+        <a class="navbar-brand text-white" href="/">JUEUN MALL</a>
+        <span class="text-white" style="font-size: 0.9rem;">관리자 페이지</span>
+    </div>
+</nav>
+
+<div class="container mb-5" style="max-width: 1000px;">
+    <h2 class="page-title mb-1">ADMIN</h2>
+    <p class="text-muted mb-4">상품을 수정하거나 삭제하면 Redis 캐시가 자동으로 무효화됩니다.</p>
+
+    <table class="table text-center admin-table">
+        <thead>
+        <tr>
+            <th style="width: 5%;">ID</th>
+            <th style="width: 30%; text-align: left;">상품명</th>
+            <th style="width: 15%;">카테고리</th>
+            <th style="width: 15%;">가격</th>
+            <th style="width: 10%;">재고</th>
+            <th style="width: 25%;">관리</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="product : ${products}">
+            <td th:text="${product.id}"></td>
+            <td class="text-start fw-bold" th:text="${product.name}"></td>
+            <td th:text="${product.category}"></td>
+            <td th:text="${#numbers.formatInteger(product.price, 0, 'COMMA')} + '원'"></td>
+            <td th:text="${product.stockQuantity}"></td>
+            <td>
+                <a th:href="@{/admin/products/{id}/edit(id=${product.id})}"
+                   class="btn btn-custom-dark btn-sm me-1">수정</a>
+                <form th:action="@{/admin/products/{id}/delete(id=${product.id})}"
+                      method="post" style="display:inline;"
+                      onsubmit="return confirm('정말 삭제하시겠습니까?')">
+                    <button type="submit" class="btn btn-danger-custom btn-sm">삭제</button>
+                </form>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+
+</body>
+</html>

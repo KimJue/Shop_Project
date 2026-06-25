@@ -38,11 +38,22 @@ public class DataInitializer {
 
             // 2. 테스트 회원 데이터 초기화
             if (userRepository.count() == 0) {
+                // 일반 유저
                 User testUser = new User();
                 testUser.setEmail("test@test.com");
                 testUser.setPassword("1234");
                 testUser.setName("주은");
+                testUser.setRole("USER");
                 userRepository.save(testUser);
+
+                // 관리자
+                User adminUser = new User();
+                adminUser.setEmail("admin@admin.com");
+                adminUser.setPassword("admin1234");
+                adminUser.setName("관리자");
+                adminUser.setRole("ADMIN");
+                userRepository.save(adminUser);
+
                 System.out.println("테스트 회원 데이터 초기화 완료!");
             }
         };

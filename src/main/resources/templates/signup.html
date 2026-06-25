@@ -31,6 +31,7 @@
         .form-check-label { font-size: 0.85rem; color: #555; }
     </style>
 </head>
+
 <body>
 
 <nav class="navbar navbar-dark navbar-custom">
@@ -79,6 +80,24 @@
         <span class="text-muted" style="font-size: 0.9rem;">이미 회원이신가요?</span>
         <a href="/login" style="font-size: 0.9rem; color: #000; font-weight: 700; text-decoration: none; margin-left: 8px;">로그인</a>
     </div>
+    <script>
+        // 전체 동의 누르면 하위 체크박스 모두 체크/해제
+        document.getElementById('agreeAll').addEventListener('change', function() {
+            document.getElementById('agreeTerms').checked = this.checked;
+            document.getElementById('agreePrivacy').checked = this.checked;
+        });
+
+        // 하위 체크박스 하나라도 해제되면 전체 동의 해제
+        document.getElementById('agreeTerms').addEventListener('change', syncAll);
+        document.getElementById('agreePrivacy').addEventListener('change', syncAll);
+
+        function syncAll() {
+            const allChecked =
+                document.getElementById('agreeTerms').checked &&
+                document.getElementById('agreePrivacy').checked;
+            document.getElementById('agreeAll').checked = allChecked;
+        }
+    </script>
 </div>
 
 </body>

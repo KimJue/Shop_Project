@@ -34,11 +34,11 @@ public class UserController {
     public String signup(@ModelAttribute UserSignupRequest request) {
         try {
             userService.signUp(request);
-            // 💡 성공 시: 로그인 화면으로 이동하며 'registered=true'라는 신호를 보냅니다.
+            // 성공 시: 로그인 화면으로 이동하며 'registered=true'라는 신호를 보냄.
             return "redirect:/login?registered=true";
 
         } catch (IllegalArgumentException e) {
-            // 💡 실패 시: 회원가입 화면으로 다시 돌아가며 'error=true'라는 신호를 보냅니다.
+            // 실패 시: 회원가입 화면으로 다시 돌아가며 'error=true'라는 신호를 보냄.
             return "redirect:/signup?error=true";
         }
     }
@@ -59,24 +59,24 @@ public class UserController {
         boolean isSuccess = userService.login(email, password);
 
         if (isSuccess) {
-            // (이전에 작성한 로그인 성공 처리 로직)
             User dbUser = userService.getUserByEmail(email);
             if (dbUser != null) {
                 session.setAttribute("loggedInUserEmail", dbUser.getEmail());
                 session.setAttribute("loggedInUserName", dbUser.getName());
+                session.setAttribute("loggedInUserRole", dbUser.getRole());  // 추가
             }
-            return "redirect:/"; // 성공 시 메인 화면으로 이동
+            return "redirect:/";
         } else {
-            return "redirect:/login?error=true"; // 실패 시 다시 로그인 화면으로
+            return "redirect:/login?error=true";
         }
     }
 
     @GetMapping("/logout")
     public String logout(HttpSession session) {
-        // 세션을 완전히 비워서 로그아웃 처리를 합니다.
+        // 세션을 완전히 비워서 로그아웃 처리.
         session.invalidate();
 
-        // 로그아웃이 끝나면 다시 메인 홈 화면으로 돌려보냅니다.
+        // 로그아웃이 끝나면 다시 메인 홈 화면으로 돌려보냄
         return "redirect:/";
     }
 }

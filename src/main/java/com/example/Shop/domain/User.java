@@ -20,4 +20,6 @@ public class User {
     private String password;
     private String name;
 
+    @Builder.Default
+    private String role ="USER"; // 기본값: 일반 유저 / 관리자: "ADMIN"
 }
