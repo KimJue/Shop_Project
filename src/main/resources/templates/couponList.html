@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>쿠폰 - Jueun Mall</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
+
+        body { font-family: 'Noto Sans KR', sans-serif; background-color: #ffffff; }
+        .navbar-custom { background-color: #000000; padding: 15px 0; }
+        .navbar-brand { font-weight: 900; letter-spacing: 2px; font-size: 1.5rem; }
+
+        .page-title { font-weight: 900; letter-spacing: 1px; font-size: 2rem; }
+
+        /* 쿠폰 카드 */
+        .coupon-card {
+            border: 1px dashed #000;
+            padding: 28px 32px;
+            margin-bottom: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .coupon-name { font-weight: 700; font-size: 1.1rem; margin-bottom: 6px; }
+        .coupon-rate { font-size: 2rem; font-weight: 900; color: #000; }
+        .coupon-stock { font-size: 0.85rem; color: #888; margin-top: 4px; }
+        .coupon-soldout { font-size: 2rem; font-weight: 900; color: #ccc; }
+
+        .btn-custom-dark { background-color: #000; color: #fff; border-radius: 0; font-weight: 700; padding: 12px 28px; }
+        .btn-custom-dark:hover { background-color: #333; color: #fff; }
+        .btn-soldout { background-color: #f0f0f0; color: #aaa; border-radius: 0; font-weight: 700; padding: 12px 28px; cursor: not-allowed; }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-dark navbar-custom mb-5">
+    <div class="container d-flex justify-content-between align-items-center">
+        <a class="navbar-brand text-white" href="/">JUEUN MALL</a>
+        <div class="d-flex align-items-center">
+            <span class="text-white me-4" style="font-size: 0.9rem;"
+                  th:text="${session.loggedInUserName} + '님'"></span>
+            <a href="/mypage" class="btn text-white me-2">마이페이지</a>
+            <a href="/cart" class="btn text-white me-2">장바구니 🛒</a>
+            <a href="/logout" class="btn btn-outline-light rounded-0"
+               style="padding: 4px 12px; font-size: 0.8rem;">로그아웃</a>
+        </div>
+        <div th:if="${session.loggedInUserEmail != null}">
+    <span class="text-white me-4" style="font-size: 0.9rem;"
+          th:text="${session.loggedInUserName} + '님'"></span>
+            <a th:if="${session.loggedInUserRole == 'ADMIN'}"
+               href="/admin" class="btn text-white me-2">관리자 ⚙️</a>
+            <a href="/coupons" class="btn text-white me-2">쿠폰 🎟️</a>
+            <a href="/mypage" class="btn text-white me-2">마이페이지</a>
+            <a href="/cart" class="btn text-white me-2">장바구니 🛒</a>
+            <a href="/logout" class="btn btn-outline-light rounded-0"
+               style="padding: 4px 12px; font-size: 0.8rem;">로그아웃</a>
+        </div>
+    </div>
+</nav>
+
+<div class="container mb-5" style="max-width: 800px;">
+    <h2 class="page-title mb-1">COUPON</h2>
+    <p class="text-muted mb-4">선착순 쿠폰을 받아보세요.</p>
+
+    <!-- 알림 메시지 -->
+    <div th:if="${param.success}"
+         class="alert rounded-0 mb-4 fw-bold"
+         style="background: #e6f4ea; border: 1px solid #000; font-size: 0.9rem;">
+        🎉 쿠폰이 성공적으로 발급되었습니다!
+    </div>
+    <div th:if="${param.error == 'already'}"
+         class="alert rounded-0 mb-4"
+         style="background: #fff4e0; border: 1px solid #cc7700; font-size: 0.9rem;">
+        이미 발급받은 쿠폰입니다.
+    </div>
+    <div th:if="${param.error == 'soldout'}"
+         class="alert rounded-0 mb-4"
+         style="background: #fce8e8; border: 1px solid #cc0000; font-size: 0.9rem;">
+        쿠폰이 모두 소진되었습니다.
+    </div>
+    <div th:if="${param.error == 'retry'}"
+         class="alert rounded-0 mb-4"
+         style="background: #f0f0f0; border: 1px solid #aaa; font-size: 0.9rem;">
+        요청이 많아 처리 중입니다. 다시 시도해주세요.
+    </div>
+
+    <!-- 쿠폰 목록 -->
+    <div th:each="coupon : ${coupons}">
+        <div class="coupon-card">
+            <div>
+                <div class="coupon-name" th:text="${coupon.name}"></div>
+                <div th:if="${coupon.issuedQuantity < coupon.totalQuantity}"
+                     class="coupon-rate"
+                     th:text="${coupon.discountRate} + '% OFF'"></div>
+                <div th:unless="${coupon.issuedQuantity < coupon.totalQuantity}"
+                     class="coupon-soldout">SOLD OUT</div>
+                <div class="coupon-stock"
+                     th:text="'남은 수량: ' + ${coupon.totalQuantity - coupon.issuedQuantity} + ' / ' + ${coupon.totalQuantity}">
+                </div>
+            </div>
+            <div>
+                <form th:if="${coupon.issuedQuantity < coupon.totalQuantity}"
+                      th:action="@{/coupons/{id}/issue(id=${coupon.id})}" method="post">
+                    <button type="submit" class="btn btn-custom-dark">받기</button>
+                </form>
+                <button th:unless="${coupon.issuedQuantity < coupon.totalQuantity}"
+                        class="btn btn-soldout" disabled>품절</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

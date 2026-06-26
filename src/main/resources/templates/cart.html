@@ -55,6 +55,17 @@
             <a href="/logout" class="btn btn-outline-light rounded-0"
                style="padding: 4px 12px; font-size: 0.8rem;">로그아웃</a>
         </div>
+        <div th:if="${session.loggedInUserEmail != null}">
+    <span class="text-white me-4" style="font-size: 0.9rem;"
+          th:text="${session.loggedInUserName} + '님'"></span>
+            <a th:if="${session.loggedInUserRole == 'ADMIN'}"
+               href="/admin" class="btn text-white me-2">관리자 ⚙️</a>
+            <a href="/coupons" class="btn text-white me-2">쿠폰 🎟️</a>
+            <a href="/mypage" class="btn text-white me-2">마이페이지</a>
+            <a href="/cart" class="btn text-white me-2">장바구니 🛒</a>
+            <a href="/logout" class="btn btn-outline-light rounded-0"
+               style="padding: 4px 12px; font-size: 0.8rem;">로그아웃</a>
+        </div>
     </div>
 </nav>
 

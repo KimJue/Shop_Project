@@ -1,7 +1,9 @@
 package com.example.Shop.config;
 
+import com.example.Shop.domain.Coupon;
 import com.example.Shop.domain.Product;
 import com.example.Shop.domain.User;
+import com.example.Shop.repository.CouponRepository;
 import com.example.Shop.repository.ProductRepository;
 import com.example.Shop.repository.UserRepository;
 import org.springframework.boot.CommandLineRunner;
@@ -12,8 +14,11 @@ import org.springframework.context.annotation.Configuration;
 public class DataInitializer {
 
     @Bean
-    public CommandLineRunner initData(ProductRepository productRepository, UserRepository userRepository) {
+    public CommandLineRunner initData(ProductRepository productRepository,
+                                      UserRepository userRepository,
+                                      CouponRepository couponRepository) {
         return args -> {
+            // 1. 상품 데이터 초기화
             if (productRepository.count() == 0) {
                 String[] categories = {"상의", "하의", "아우터", "신발", "악세서리"};
                 String[] names = {
@@ -36,9 +41,8 @@ public class DataInitializer {
                 System.out.println("상품 데이터 20개 초기화 완료!");
             }
 
-            // 2. 테스트 회원 데이터 초기화
+            // 2. 회원 데이터 초기화
             if (userRepository.count() == 0) {
-                // 일반 유저
                 User testUser = new User();
                 testUser.setEmail("test@test.com");
                 testUser.setPassword("1234");
@@ -46,7 +50,6 @@ public class DataInitializer {
                 testUser.setRole("USER");
                 userRepository.save(testUser);
 
-                // 관리자
                 User adminUser = new User();
                 adminUser.setEmail("admin@admin.com");
                 adminUser.setPassword("admin1234");
@@ -54,7 +57,28 @@ public class DataInitializer {
                 adminUser.setRole("ADMIN");
                 userRepository.save(adminUser);
 
-                System.out.println("테스트 회원 데이터 초기화 완료!");
+                System.out.println("회원 데이터 초기화 완료!");
+            }
+
+            // 3. 쿠폰 데이터 초기화
+            if (couponRepository.count() == 0) {
+                Coupon coupon1 = Coupon.builder()
+                        .name("신규가입 10% 할인 쿠폰")
+                        .discountRate(10)
+                        .totalQuantity(100)
+                        .issuedQuantity(0)
+                        .build();
+                couponRepository.save(coupon1);
+
+                Coupon coupon2 = Coupon.builder()
+                        .name("여름 시즌 20% 할인 쿠폰")
+                        .discountRate(20)
+                        .totalQuantity(50)
+                        .issuedQuantity(0)
+                        .build();
+                couponRepository.save(coupon2);
+
+                System.out.println("쿠폰 데이터 초기화 완료!");
             }
         };
     }

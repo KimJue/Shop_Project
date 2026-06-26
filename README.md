@@ -7,9 +7,9 @@
 
 ## 📌 프로젝트 목표
 
-- 선착순 쿠폰 발급 시 발생하는 **대규모 Write 트래픽 및 동시성 문제** 해결
 - 상품 목록 조회 시 발생하는 **대규모 Read 트래픽을 Redis 캐싱**으로 최적화
-- 부하 테스트 도구(JMeter / nGrinder)를 활용한 **개선 전후 성능 수치 비교**
+- 선착순 쿠폰 발급 시 발생하는 **대규모 Write 트래픽 및 동시성 문제** 해결
+- 부하 테스트 도구(JMeter)를 활용한 **개선 전후 성능 수치 비교**
 
 ---
 
@@ -23,6 +23,7 @@
 | Frontend | Thymeleaf, Bootstrap 5 |
 | DevOps | Docker |
 | Build | Gradle |
+| Test | JMeter |
 
 ---
 
@@ -31,11 +32,12 @@
 ### 👤 회원
 - 회원가입 / 로그인 / 로그아웃 (세션 기반)
 - 이메일 중복 검사
+- 역할 기반 접근 제어 (`USER` / `ADMIN`)
 
 ### 🛍️ 상품
 - 상품 목록 조회 (카테고리 필터링)
 - 상품 상세 페이지 (재고 수량, 사이즈 선택)
-- 상품 데이터 자동 초기화 (DataInitializer)
+- 상품 데이터 자동 초기화 (`DataInitializer`)
 
 ### 🛒 장바구니
 - 상품 담기 / 삭제
@@ -46,11 +48,35 @@
 - 주문 상태 관리 (`ORDERED` → `SHIPPING` → `DELIVERED`)
 - 마이페이지 주문 내역 조회 (최신순 정렬)
 
-### ⚡ 트래픽 처리 (진행 중)
-- [ ] 상품 목록 Redis 캐싱 적용
-- [ ] 선착순 쿠폰 발급 시스템 (동시성 제어)
-- [ ] 분산 락 (Redis Distributed Lock)
-- [ ] 부하 테스트 및 성능 개선 수치 기록
+### ⚡ 성능 최적화
+- [x] 상품 목록 / 상세 **Redis 캐싱** 적용 (`@Cacheable`, TTL 5분)
+- [x] 상품 수정 / 삭제 시 **캐시 무효화** (`@CacheEvict`)
+- [x] 선착순 쿠폰 발급 **Redis 분산 락** 적용 (`setIfAbsent`, TTL 5초)
+- [x] 중복 발급 방지 및 재고 초과 발급 차단
+- [ ] 부하 테스트 및 성능 개선 수치 기록 (진행 중)
+
+### 🎟️ 쿠폰
+- 선착순 쿠폰 목록 조회 및 발급
+- 쿠폰 상태 관리 (`UNUSED` / `USED` / `EXPIRED`)
+- 1인 1쿠폰 중복 발급 방지
+- 재고 소진 시 품절 처리
+
+### 🔐 관리자
+- 역할 기반 관리자 페이지 (`/admin`) 접근 제한
+- 상품 수정 / 삭제 (수정/삭제 시 Redis 캐시 자동 무효화)
+
+---
+
+## 🔒 Redis 분산 락 동작 원리
+
+```
+1000명이 동시에 쿠폰 발급 요청
+→ Redis에 락 키(lock:coupon:{id}) 생성 시도
+→ 딱 1명만 락 획득 성공 (setIfAbsent)
+→ 나머지 999명은 "LOCKED" 반환 → 재시도 안내
+→ 락 획득한 1명이 재고 확인 → 발급 → 락 해제
+→ 다음 요청이 락 획득 → 반복
+```
 
 ---
 
@@ -61,7 +87,8 @@ User
 ├── id (PK)
 ├── email
 ├── password
-└── name
+├── name
+└── role (USER / ADMIN)
 
 Product
 ├── id (PK)
@@ -80,13 +107,6 @@ Order (orders)
 ├── orderDate
 └── status (ORDERED / SHIPPING / DELIVERED)
 
-OrderItem
-├── id (PK)
-├── order_id (FK)
-├── product_id (FK)
-├── orderPrice
-└── count
-
 CartItem
 ├── id (PK)
 ├── userEmail
@@ -102,8 +122,8 @@ Coupon
 
 UserCoupon
 ├── id (PK)
-├── user_id (FK)
-├── coupon_id (FK)
+├── userEmail
+├── couponId
 ├── status (UNUSED / USED / EXPIRED)
 └── createdAt
 ```
@@ -121,22 +141,36 @@ docker run --name local-mysql \
   -d mysql:latest
 ```
 
-### 2. application.properties 설정
+### 2. Redis 실행 (Docker)
+```bash
+docker run --name local-redis \
+  -p 6379:6379 \
+  -d redis:latest
+```
+
+### 3. application.properties 설정
 ```properties
 spring.datasource.url=jdbc:mysql://localhost:3306/shop_db
 spring.datasource.username=root
 spring.datasource.password=1234
 spring.jpa.hibernate.ddl-auto=update
+
+spring.data.redis.host=localhost
+spring.data.redis.port=6379
 ```
 
-### 3. 서버 실행
+### 4. 서버 실행
 ```bash
 ./gradlew bootRun
 ```
 
-### 4. 접속
+### 5. 접속
 ```
 http://localhost:8080
+
+# 테스트 계정
+일반 유저: test@test.com / 1234
+관리자:    admin@admin.com / admin1234
 ```
 
 ---
@@ -146,37 +180,45 @@ http://localhost:8080
 ```
 src/main/java/com/example/Shop/
 ├── config/
-│   └── DataInitializer.java       # 초기 상품/회원 데이터 자동 생성
+│   ├── DataInitializer.java       # 초기 상품/회원/쿠폰 데이터 자동 생성
+│   └── RedisConfig.java           # Redis 캐시 설정 (TTL 5분)
 ├── controller/
-│   ├── ProductController.java
+│   ├── ProductController.java     # 상품 목록/상세/관리자 CRUD
 │   ├── CartController.java
 │   ├── OrderController.java
+│   ├── CouponController.java      # 쿠폰 목록/발급
 │   └── UserController.java
 ├── domain/
 │   ├── Product.java
-│   ├── User.java
+│   ├── User.java                  # role 필드 (USER / ADMIN)
 │   ├── CartItem.java
 │   ├── Order.java
-│   └── OrderStatus.java           # enum (ORDERED / SHIPPING / DELIVERED)
+│   ├── OrderStatus.java           # enum (ORDERED / SHIPPING / DELIVERED)
+│   ├── Coupon.java
+│   ├── UserCoupon.java
+│   └── CouponStatus.java          # enum (UNUSED / USED / EXPIRED)
 ├── repository/
 │   ├── ProductRepository.java
 │   ├── CartItemRepository.java
 │   ├── OrderRepository.java
-│   └── UserRepository.java
+│   ├── UserRepository.java
+│   ├── CouponRepository.java
+│   └── UserCouponRepository.java
 └── service/
-    ├── ProductService.java
+    ├── ProductService.java        # @Cacheable / @CacheEvict 적용
     ├── CartService.java
     ├── OrderService.java
+    ├── CouponService.java         # Redis 분산 락 적용
     └── UserService.java
 ```
 
 ---
 
-## 📊 성능 테스트 결과 (예정)
+## 📊 성능 테스트 결과 (진행 중)
 
 | 시나리오 | 적용 전 TPS | 적용 후 TPS | 개선율 |
 |----------|------------|------------|--------|
 | 상품 목록 조회 (Redis 캐싱) | - | - | - |
 | 선착순 쿠폰 발급 (분산 락) | - | - | - |
 
-> 부하 테스트 도구: JMeter / nGrinder
+> 부하 테스트 도구: JMeter
